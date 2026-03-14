@@ -14,9 +14,9 @@ class SkillRuntime:
     """
     Runtime for skill discovery and lightweight builtin skill execution planning.
 
-    Stage 2:
+    Stage 3:
     - still no dynamic import/exec
-    - includes one builtin skill: "repeat_back"
+    - includes builtin skill: "repeat_back"
     """
 
     loader: SkillLoader
@@ -31,10 +31,6 @@ class SkillRuntime:
     def build_plan(self, *, skill_name: str, request: BrainRequest) -> ExecutionPlan:
         """
         Translate a skill invocation into an ExecutionPlan.
-
-        Builtin "repeat_back" skill:
-        - uses the safe "echo" tool
-        - echoes the full transcript text back to the caller
         """
 
         if skill_name == "repeat_back":
@@ -43,4 +39,3 @@ class SkillRuntime:
             return ExecutionPlan(request_id=request.request_id, steps=[step])
 
         raise SkillError(f"Unknown skill: {skill_name}")
-

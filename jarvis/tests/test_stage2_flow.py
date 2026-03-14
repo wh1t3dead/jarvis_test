@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from shared.types import (
+    BrainDecision,
+    BrainDecisionKind,
     BrainRequest,
     ExecutionPlan,
     SessionContext,
@@ -16,10 +18,10 @@ from agents.executor import ExecutorAgent
 from agents.planner import PlannerAgent
 from app.bootstrap import bootstrap_app
 from brain.router import BrainRouter
-from tools.echo import EchoTool
-from tools.registry import ToolRegistry
 from skills.loader import SkillLoader
 from skills.runtime import SkillRuntime
+from tools.echo import EchoTool
+from tools.registry import ToolRegistry
 
 
 def _make_request(text: str) -> BrainRequest:
@@ -33,15 +35,19 @@ def test_brain_router_routes_to_skill_direct_and_planner() -> None:
 
     skill_req = _make_request("please repeat back this text")
     direct_req = _make_request("hello")
-    planner_req = _make_request("do something more complex")
     ru_direct_req = _make_request("привет")
+    uppercase_req = _make_request("please uppercase this text")
+    count_req = _make_request("please count words here")
+    planner_req = _make_request("do something more complex")
     short_command_req_1 = _make_request("open browser")
     short_command_req_2 = _make_request("list files")
 
     skill_route = router.route(skill_req)
     direct_route = router.route(direct_req)
-    planner_route = router.route(planner_req)
     ru_direct_route = router.route(ru_direct_req)
+    uppercase_route = router.route(uppercase_req)
+    count_route = router.route(count_req)
+    planner_route = router.route(planner_req)
     short_command_route_1 = router.route(short_command_req_1)
     short_command_route_2 = router.route(short_command_req_2)
 
@@ -49,9 +55,11 @@ def test_brain_router_routes_to_skill_direct_and_planner() -> None:
     assert skill_route.route_id == "repeat_back"
 
     assert direct_route.target == "direct"
-
-    assert planner_route.target == "planner"
     assert ru_direct_route.target == "direct"
+
+    assert uppercase_route.target == "planner"
+    assert count_route.target == "planner"
+    assert planner_route.target == "planner"
     assert short_command_route_1.target == "planner"
     assert short_command_route_2.target == "planner"
 
@@ -123,10 +131,14 @@ def test_end_to_end_demo_flow() -> None:
     )
 
     request = app.sessions.make_brain_request(session_id=session.session_id, transcript=transcript)
-    plan = app.brain.handle(request)
+    decision = app.brain.handle(request)
+
+    assert isinstance(decision, BrainDecision)
+    assert decision.kind == BrainDecisionKind.PLAN
+    assert decision.plan is not None
 
     task = app.sessions.make_task(session_id=session.session_id, goal="end-to-end demo")
-    results = app.executor.execute(plan=plan, task=task, tools=app.tools)
+    results = app.executor.execute(plan=decision.plan, task=task, tools=app.tools)
 
     assert len(results) == 1
     assert results[0].data == {"echo": "please repeat back: hello world"}
@@ -177,4 +189,3 @@ def test_executor_marks_failed_step_and_continues_on_error() -> None:
     assert second.ok is True
     assert second.data == {"echo": "second"}
     assert ok_step.status == TaskStepStatus.DONE
-

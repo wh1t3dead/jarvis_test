@@ -142,6 +142,25 @@ class ExecutionPlan(BaseModel):
     steps: list[TaskStep] = Field(default_factory=list)
 
 
+class BrainDecisionKind(str, Enum):
+    DIRECT_ANSWER = "direct_answer"
+    PLAN = "plan"
+
+
+class BrainDecision(BaseModel):
+    """
+    Result of a Brain orchestration step.
+
+    - kind == DIRECT_ANSWER → final_text is populated, plan is None
+    - kind == PLAN → plan is populated, final_text may be None
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: BrainDecisionKind
+    plan: Optional[ExecutionPlan] = None
+    final_text: Optional[str] = None
+
 class SkillManifest(BaseModel):
     """Declarative metadata for a skill package (Stage 1 schema)."""
 

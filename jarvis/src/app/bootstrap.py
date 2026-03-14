@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from agents.executor import ExecutorAgent
+from brain.llm_router import LLMRouter, StubLLMProvider
 from brain.orchestrator import BrainOrchestrator
 from brain.router import BrainRouter
 from sessions.manager import SessionManager
@@ -11,6 +12,8 @@ from skills.loader import SkillLoader
 from skills.runtime import SkillRuntime
 from tools.echo import EchoTool
 from tools.registry import ToolRegistry
+from tools.uppercase_text import UppercaseTextTool
+from tools.word_count import WordCountTool
 
 
 class JarvisApp:
@@ -24,11 +27,15 @@ class JarvisApp:
 
         # Register safe demo tools
         self.tools.register(EchoTool())
+        self.tools.register(UppercaseTextTool())
+        self.tools.register(WordCountTool())
 
         self.skills = SkillRuntime(loader=SkillLoader(), tools=self.tools)
 
         self.brain_router = BrainRouter()
-        self.brain = BrainOrchestrator(router=self.brain_router, skills=self.skills)
+        llm_stub = StubLLMProvider()
+        llm_router = LLMRouter(default_provider=llm_stub)
+        self.brain = BrainOrchestrator(router=self.brain_router, skills=self.skills, llm_router=llm_router)
 
         self.executor = ExecutorAgent()
 
